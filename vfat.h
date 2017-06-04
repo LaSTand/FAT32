@@ -11,8 +11,9 @@ struct fat_boot_header {
     /* General */
     /* 0*/  uint8_t  jmp_boot[3];
     /* 3*/  char     oemname[8];
+    /**  BIOS Parameter Block (BPB)  **/
     /*11*/  uint16_t bytes_per_sector;
-    /*13*/  uint8_t  sectors_per_cluster;
+    /*13*/  uint8_t  sectors_per_cluster; 
     /*14*/  uint16_t reserved_sectors;
     /*16*/  uint8_t  fat_count;
     /*17*/  uint16_t root_max_entries;
@@ -31,6 +32,7 @@ struct fat_boot_header {
     /*48*/  uint16_t fsinfo_sector;
     /*50*/  uint16_t backup_sector;
     /*52*/  uint8_t  reserved2[12];
+    /**  End of BPB  **/
     /*64*/  uint8_t  drive_number;
     /*65*/  uint8_t  reserved3;
     /*66*/  uint8_t  ext_sig;
@@ -83,26 +85,33 @@ struct fat32_direntry_long {
 #define VFAT_LFN_SEQ_DELETED    0x80
 #define VFAT_LFN_SEQ_MASK       0x3f
 
-
 // A kitchen sink for all important data about filesystem
-// the order of structures in a FAT partition or disk
 struct vfat_data {
     const char* dev;
     int         fd;
     uid_t mount_uid;
     gid_t mount_gid;
     time_t mount_time;
+
     /* TODO: add your code here */
-    size_t      fat_entries;
-    off_t       cluster_begin_offset;
-    size_t      direntry_per_cluster;
-    size_t      bytes_per_sector;
-    size_t      sectors_per_cluster;
-    size_t      reserved_sectors;
-    size_t      sectors_per_fat;
-    size_t      cluster_size;
-    off_t       fat_begin_offset;
-    size_t      fat_size;
+    size_t      root_dir_sectors;
+    size_t      first_data_sector;
+    size_t      total_sectors;
+    size_t      data_sectors;
+    size_t      count_of_cluster;
+
+    size_t      fat_entries;            // FAT ? 
+    off_t       cluster_begin_offset;   // o
+    size_t      direntry_per_cluster;   // o
+    // BPB ; 0x0B ~ 0x40 (53 bytes)
+    size_t      bytes_per_sector;       // Sector Size  512
+    size_t      sectors_per_cluster;    // Cluster Size 8*512
+    size_t      reserved_sectors;       // 512 * 32 byte
+    // num of FATs 0x11 ~ 0x15 (FAT12/16 only)
+    size_t      sectors_per_fat;        // 999
+    size_t      cluster_size;           // 8 * 512
+    off_t       fat_begin_offset;       // boot record + reseved area;
+    size_t      fat_size;               // 32 -> 
     struct stat root_inode;
     uint32_t*   fat; // use util::mmap_file() to map this directly into the memory 
 };
