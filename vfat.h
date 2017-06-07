@@ -5,6 +5,9 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fuse.h>
+
+typedef enum {false, true} bool;
 
 // Boot sector
 struct fat_boot_header {
@@ -66,8 +69,16 @@ struct fat32_direntry {
     /*28*/  uint32_t size;
 } __attribute__ ((__packed__));
 
+#define ATTR_READ_ONLY  0x01
+#define ATTR_HIDDEN 0x02
+#define ATTR_SYSTEM 0x04
+#define ATTR_VOLUME_ID  0x08
+#define ATTR_DIRECTORY  0x10
+#define ATTR_ARCHIVE    0x20
+#define ATTR_LONG_NAME  (ATTR_READ_ONLY | ATTR_HIDDEN | ATTR_SYSTEM | ATTR_VOLUME_ID)
+
 #define VFAT_ATTR_DIR   0x10
-#define VFAT_ATTR_LFN   0xf
+#define VFAT_ATTR_LFN   0x0f        // same with ATTR_LONG_NAME
 #define VFAT_ATTR_INVAL (0x80|0x40|0x08)
 
 struct fat32_direntry_long {
@@ -99,6 +110,7 @@ struct vfat_data {
     size_t      total_sectors;
     size_t      data_sectors;
     size_t      count_of_cluster;
+    size_t      root_cluster;
 
     size_t      fat_entries;            // FAT ? 
     off_t       cluster_begin_offset;   // o
@@ -118,10 +130,16 @@ struct vfat_data {
 
 struct vfat_data vfat_info;
 
+void seek_cluster(uint32_t cluster_num);
+
 /// FOR debugfs
-int vfat_next_cluster(unsigned int c);
+int vfat_next_cluster(uint32_t cluster_num);
 int vfat_resolve(const char *path, struct stat *st);
 int vfat_fuse_getattr(const char *path, struct stat *st);
 ///
+static int read_cluster(uint32_t cluster_num, fuse_fill_dir_t filler, void *fillerdata);
+char * GetFileName(char * nameext, char * filename);
+time_t conv_time(uint16_t date_entry, uint16_t time_entry);
+void setStat(struct fat32_direntry dir_entry, char* buffer, fuse_fill_dir_t filler, void *fillerdata, uint32_t cluster_no);
 
 #endif
