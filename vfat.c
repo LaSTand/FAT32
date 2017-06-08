@@ -108,7 +108,7 @@ vfat_init(const char *dev)
         vfat_info.fat_size = s.sectors_per_fat;
     
     // How many entries in one FAT. One entry is 4byte
-    vfat_info.fat_entries = vfat_info.fat_size / sizeof(uint32_t);
+    vfat_info.fat_entries = vfat_info.fat_size * s.bytes_per_sector / sizeof(uint32_t);
 
     // Total sector
     if(s.total_sectors_small != 0)
@@ -616,16 +616,7 @@ int vfat_resolve(const char *path, struct stat *st)
 // Get file attributes
 int vfat_fuse_getattr(const char *path, struct stat *st)
 {
-    /*
-    if (strncmp(path, DEBUGFS_PATH, strlen(DEBUGFS_PATH)) == 0) {
-        // This is handled by debug virtual filesystem
-        return debugfs_fuse_getattr(path + strlen(DEBUGFS_PATH), st);
-    } else {
-        // Normal file
-        return vfat_resolve(path, st);
-    }
-    */
-    // No such file
+       // No such file
     if (strcmp(path, "/") == 0) {
         st->st_dev = 0; // Ignored by FUSE
         st->st_ino = 0; // Ignored by FUSE unless overridden
@@ -654,6 +645,15 @@ int vfat_fuse_getattr(const char *path, struct stat *st)
     } else {
         return 0;
     }
+    /*
+    if (strncmp(path, DEBUGFS_PATH, strlen(DEBUGFS_PATH)) == 0) {
+        // This is handled by debug virtual filesystem
+        return debugfs_fuse_getattr(path + strlen(DEBUGFS_PATH), st);
+    } else {
+        // Normal file
+        return vfat_resolve(path, st);
+    }
+    */
 }
 
 // Extended attributes useful for debugging
